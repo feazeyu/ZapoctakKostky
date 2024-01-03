@@ -229,6 +229,10 @@ int LCM(vector<long long>& input)
 //Converts denominators of two results to equal each other, then adds the probabilities
 DieResult combineResult(DieResult&& a, DieResult&& b) {
     vector<long long> denominators = { a.denominator, b.denominator };
+    if (a.denominator == 0 || b.denominator == 0) {
+        printf("The resulting die could have negative sides, and you cant roll a negative sided die. So... don't do that :)");
+        exit(500);
+    };
     int lcm = LCM(denominators);
     int coefficientA = lcm / a.denominator;
     int coefficientB = lcm / b.denominator;
@@ -370,12 +374,15 @@ DieResult calculate(const string& expr) {
         case Token::Type::Operator:
         {
             if (token.unary) {
+                if (stack.empty()) {
+                    queue.push_back(Token{ Token::Type::Err, "Invalid Input" });
+                    break;
+                }
                 auto rhs = stack.back();
                 stack.pop_back();
                 switch (token.str[0]) {
                 default:
-                    printf("Operator error [%s]\n", token.str.c_str());
-                    exit(0);
+                    queue.push_back(Token{ Token::Type::Err, "Operator Error" });
                     break;
                 case 'm':                   // Special operator name for unary '-'
                     rhs.multiplyByConstant(-1);
@@ -385,6 +392,10 @@ DieResult calculate(const string& expr) {
             }
             else {
                 // binary operators
+                if (stack.empty()) {
+                    queue.push_back(Token{ Token::Type::Err, "Invalid Input" });
+                    break;
+                }
                 auto rhs = stack.back();
                 stack.pop_back();
                 if (stack.empty()) {
@@ -396,8 +407,7 @@ DieResult calculate(const string& expr) {
 
                 switch (token.str[0]) {
                 default:
-                    printf("Operator error [%s]\n", token.str.c_str());
-                    exit(0);
+                    queue.push_back(Token{ Token::Type::Err, "Operator Error" });
                     break;
                 case '*':
                     stack.push_back(multiplyResult(lhs, rhs));
