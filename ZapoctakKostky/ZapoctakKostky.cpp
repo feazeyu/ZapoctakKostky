@@ -230,7 +230,8 @@ int LCM(vector<long long>& input)
 DieResult combineResult(DieResult&& a, DieResult&& b) {
     vector<long long> denominators = { a.denominator, b.denominator };
     if (a.denominator == 0 || b.denominator == 0) {
-        printf("The resulting die could have negative sides, and you cant roll a negative sided die. So... don't do that :)");
+        printf("The resulting die could have negative sides, and you cant roll a negative sided die. So... don't do that :) \n");
+        system("pause");
         exit(500);
     };
     int lcm = LCM(denominators);
