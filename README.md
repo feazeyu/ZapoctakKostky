@@ -16,11 +16,13 @@ https://en.wikipedia.org/wiki/Shunting_yard_algorithm
 
 Algoritmus co přepíše vzorec do obrácené polské notace, ze které se dá pěkně vyhodnocovat ve správném pořadí
 
-### Třída DieResult
+### Třída DieResult a SimpleDieResult
 
 Cílem programu nebylo najít jeden výsledek, ale všechny možné a jejich pravděpodobnosti.
 Proto se na všechna čísla dívá jako na soubor pravěpodobností a s tím i vevnitř počítá.
-Například číslo 5 by bylo DieResult, která má pravděpodobnost 100% na výsledek 5, samozřejmě 1d6 pak má 1/6 na každé číslo od 1 do 6
+Protože bylo potřeba rozlišit případy, kdy na jedné nebo obou stranách operátoru d je DieResult a kdy tam jsou jen čísla, existuje třída SimpleDieResult.
+Ta je odvozená od DieResult a počítá pouze jednoduché případy - kdy na obou stranách jsou čísla. DieResult potom počítá se SimpleDieResults
+Například číslo 5 by bylo SimpleDieResult, která má pravděpodobnost 100% na výsledek 5, samozřejmě 1d6 pak má 1/6 na každé číslo od 1 do 6
 
 ### Interní funkce pro manipulaci DieResultů
 
