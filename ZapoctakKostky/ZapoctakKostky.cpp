@@ -1,157 +1,275 @@
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <deque>
-#include <tuple>
-#include <stdio.h>
-#include <math.h>
-#include <map>
+#include "main.h"
 using namespace std;
+
+long long factorial(long long n) {
+    if (n == 0) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
 
 
 /*
 DieResult class - A set of methods to operate with "resultProbabilities", which are chances for each individual possibility to happen.
 Numbers are DieResults with probability 1 to be the number they are
 */
-class DieResult {
-public:
-    map<int, int> resultProbabilities;
-    vector<int> sides;
-    int count;
-    int maxRoll;
-    long denominator;
-    bool artificialDieResult;
-    void calculateResults() {
-        if (artificialDieResult) {
-            cout << "Cannot calculate results for an artificialDieResult" << endl;
-            exit;
+DieResult DieResult::Create(int dieCount, DieResult sideSize) {
+    DieResult dieResult;
+    dieResult.maxRoll = sideSize.resultProbabilities.rbegin()->first * dieCount;
+    for (int i = dieCount; i <= dieResult.maxRoll; i++) {
+        dieResult.resultProbabilities[i] = 0;
+    }
+    if (dieResult.denominator == 0) {
+        dieResult.artificialDieResult = false;
+        dieResult = dieResult.calculateResults(dieCount, sideSize);
+        if (dieCount == 0) {
+            dieResult.resultProbabilities[0] = 1;
+            dieResult.denominator = 1;
+            return dieResult;
         }
-        int k = count;
-        vector<int> n = sides;
-        vector<int> variations = {};
-        for (int j = 0; j < maxRoll; j++) {
-            variations.push_back(0);
-        }
-        calc(k, n, 0, variations);
-    };
+    }
+    else {
+        dieResult.artificialDieResult = true;
+    }
+    return dieResult;
+}
 
-    DieResult(vector<int> sides, long s_denominator = 0)
-        : sides{ sides },
-        denominator{ s_denominator }
-    {
-        int buffer = 0;
-        for (int i : sides) {
-            buffer += i;
-        }
-        maxRoll = buffer;
-        count = sides.size();
-        for (int i = count; i < maxRoll; i++) {
-            resultProbabilities[i] = 0;
-        }
-        if (denominator == 0) {
-            artificialDieResult = false;
-            calculateResults();
-            if (count == 0) {
-                resultProbabilities[0] = 1;
-                denominator = 1;
-                return;
-            }
+DieResult DieResult::Create(DieResult dieCount, int sideSize) {
+    DieResult dieResult;
+    dieResult.maxRoll = sideSize * dieCount.resultProbabilities.rbegin()->first;
+    for (int i = dieCount.resultProbabilities.begin()->first; i <= dieResult.maxRoll; i++) {
+        dieResult.resultProbabilities[i] = 0;
+    }
+    if (dieResult.denominator == 0) {
+        dieResult.artificialDieResult = false;
+        dieResult = dieResult.calculateResults(dieCount, sideSize);
+    }
+    else {
+        dieResult.artificialDieResult = true;
+    }
+    return dieResult;
+}
+
+DieResult DieResult::Create(DieResult dieCount, DieResult sideSize) {
+    DieResult dieResult;
+    dieResult.maxRoll = sideSize.resultProbabilities.rbegin()->first * dieCount.resultProbabilities.rbegin()->first;
+    for (int i = dieCount.resultProbabilities.begin()->first; i <= dieResult.maxRoll; i++) {
+        dieResult.resultProbabilities[i] = 0;
+    }
+    if (dieResult.denominator == 0) {
+        dieResult.artificialDieResult = false;
+        dieResult = dieResult.calculateResults(dieCount, sideSize);
+    }
+    else {
+        dieResult.artificialDieResult = true;
+    }
+    return dieResult;
+}
+
+DieResult DieResult::calculateResults(int dieCount, DieResult sideSize) {
+    if (artificialDieResult) {
+        cout << "Cannot calculate results for an artificialDieResult" << endl;
+        exit;
+    }
+    vector<int> variations = {};
+    DieResult dieResult;
+    bool haveFirst = false;
+    for (auto&& pair : sideSize.resultProbabilities) {
+        DieResult newDieResult = SimpleDieResult::Create(dieCount, (int)get<0>(pair));
+        newDieResult.multiplyProbabilities(get<1>(pair));
+        newDieResult.denominator *= sideSize.denominator;
+        if (!haveFirst) {
+            dieResult = newDieResult;
+            haveFirst = true;
         }
         else {
-            artificialDieResult = true;
+            dieResult = combineResult(std::move(dieResult), move(newDieResult));
         }
     }
+    return dieResult;
+}
 
-    
-
-    void addConstant(int constant) {
-        map<int, int> newMap;
-        for (const auto& entry : resultProbabilities) {
-            int key = entry.first;
-            int value = entry.second;
-            newMap[key + constant] = value;
-        }
-        resultProbabilities = newMap;
+DieResult DieResult::calculateResults(DieResult dieCount, int sideSize) {
+    if (artificialDieResult) {
+        cout << "Cannot calculate results for an artificialDieResult" << endl;
+        exit;
     }
-
-    void multiplyByConstant(int constant) {
-        map<int, int> newMap;
-        for (const auto& entry : resultProbabilities) {
-            int key = entry.first;
-            int value = entry.second;
-            newMap[key * constant] = value;
+    vector<int> variations = {};
+    DieResult dieResult;
+    bool haveFirst = false;
+    for (auto&& pair : dieCount.resultProbabilities) {
+        DieResult newDieResult = SimpleDieResult::Create((int)get<0>(pair), sideSize);
+        newDieResult.multiplyProbabilities(get<1>(pair));
+        newDieResult.denominator *= dieCount.denominator;
+        if (!haveFirst) {
+            dieResult = newDieResult;
+            haveFirst = true;
         }
-        resultProbabilities = newMap;
-    }
-
-    void multiplyProbabilities(int constant) {
-        for (auto& probability : resultProbabilities) {
-            get<1>(probability) *= constant;
+        else {
+            dieResult = combineResult(std::move(dieResult), move(newDieResult));
         }
     }
+    return dieResult;
+}
 
-    void logResult() {
-        for (const auto& n : resultProbabilities) {
-                cout << n.first << " = " << n.second << "/" << denominator << "; " << endl;
-        } 
+DieResult DieResult::calculateResults(DieResult dieCount, DieResult sideSize) {
+    if (artificialDieResult) {
+        cout << "Cannot calculate results for an artificialDieResult" << endl;
+        exit;
     }
-private:
-    /*
-    Recursive calculation of all possibilities
-    */
-    void calc(int k, vector<int> n, int i, vector<int>& variations) {
-        if (n.size() > 0) {
-            for (int j = 1; j < n[i] + 1; j++) {
-                variations[i] = j;
-                if (i < k - 1) {
-                    calc(k, n, i + 1, variations);
-                }
-                else {
-                    int sum = 0;
-                    for (int number : variations) {
-                        sum += number;
-                    }
-                    resultProbabilities[sum] += 1;
-                    if (!artificialDieResult) {
-                        denominator += 1;
-                    }
-                }
-            }
+    vector<int> variations = {};
+    DieResult dieResult;
+    bool haveFirst = false;
+    for (auto&& pair : dieCount.resultProbabilities) {
+        DieResult newDieResult = DieResult::Create((int)get<0>(pair), sideSize);
+        newDieResult.multiplyProbabilities(get<1>(pair));
+        newDieResult.denominator *= dieCount.denominator;
+        if (!haveFirst) {
+            dieResult = newDieResult;
+            haveFirst = true;
+        }
+        else {
+            dieResult = combineResult(std::move(dieResult), move(newDieResult));
         }
     }
+    return dieResult;
+}
 
+void DieResult::addConstant(int constant) {
+    map<long long, long long> newMap;
+    for (const auto& entry : resultProbabilities) {
+        long long key = entry.first;
+        long long value = entry.second;
+        newMap[key + constant] = value;
+    }
+    resultProbabilities = newMap;
+}
+
+void DieResult::multiplyByConstant(int constant) {
+    map<long long, long long> newMap;
+    for (const auto& entry : resultProbabilities) {
+        long long key = entry.first;
+        long long value = entry.second;
+        newMap[key * constant] = value;
+    }
+    resultProbabilities = newMap;
+}
+
+void DieResult::multiplyProbabilities(int constant) {
+    for (auto& probability : resultProbabilities) {
+        get<1>(probability) *= constant;
+    }
+}
+
+void DieResult::logResult() {
+    for (const auto& n : resultProbabilities) {
+        cout << n.first << " = " << n.second << "/" << denominator << "; " << endl;
+    }
+}
+
+void DieResult::processVariation(int initialSum, vector<int>& variations) {
+    int variationSum = 0; //TODO
+    for (int k = 0; k < variations.size(); k++) {
+        variationSum += variations[k] * k;
+    }
+    long long topOfMultinomialCoefficient = factorial(initialSum);
+    long long bottomOfMultinomialCoefficient = 1;
+    for (int j = 0; j < variations.size(); j++) {
+        bottomOfMultinomialCoefficient *= factorial(variations[j]);
+    }
+    resultProbabilities[variationSum] += (topOfMultinomialCoefficient / bottomOfMultinomialCoefficient);
+    return;
+}
+/*
+Recursive calculation of all possibilities
+*/
+void DieResult::calc(int targetSum, int i, vector<int>& variations, int initialSum) {
+    if (i == variations.size() - 1 || targetSum == 0) {
+        variations[i] = targetSum;
+        //Mam valid variaci
+        processVariation(initialSum, variations);
+        return;
+    }
+    for (int currentValue = 0; currentValue <= targetSum; currentValue++) {
+        variations[i] = currentValue;
+        calc(targetSum - currentValue, i + 1, variations, initialSum);
+    }
+}
+
+SimpleDieResult SimpleDieResult::Create(int dieCount, int sideSize)
+{
+    SimpleDieResult simpleDieResult;
+    simpleDieResult.dieCount = dieCount;
+    simpleDieResult.sideSize = sideSize;
+    simpleDieResult.maxRoll = sideSize * dieCount;
+    for (int i = dieCount; i <= simpleDieResult.maxRoll; i++) {
+        simpleDieResult.resultProbabilities[i] = 0;
+    }
+    if (simpleDieResult.denominator == 0) {
+        simpleDieResult.artificialDieResult = false;
+        simpleDieResult.calculateResults(dieCount, sideSize);
+        if (dieCount == 0) {
+            simpleDieResult.resultProbabilities[0] = 1;
+            simpleDieResult.denominator = 1;
+            return simpleDieResult;
+        }
+    }
+    else {
+        simpleDieResult.artificialDieResult = true;
+    }
+    return simpleDieResult;
+}
+
+void SimpleDieResult::calculateResults(int dieCount, int sideSize) {
+    if (artificialDieResult) {
+        cout << "Cannot calculate results for an artificialDieResult" << endl;
+        exit;
+    }
+    vector<int> variations = {};
+    for (int j = 0; j < sideSize; j++) {
+        variations.push_back(0);
+    }
+    calc(dieCount, 0, variations, dieCount);
+    denominator = pow(sideSize, dieCount);
 };
 
 
-class Token {
-public:
-    enum class Type {
-        Unknown,
-        Number,
-        Operator,
-        LeftParen,
-        RightParen,
-        DieResult,
-        Err
-    };
+void SimpleDieResult::processVariation(int initialSum, vector<int>& variations) {
+    int variationSum = dieCount;
+    for (int k = 0; k < variations.size(); k++) {
+        variationSum += variations[k] * k;
+    }
+    long long topOfMultinomialCoefficient = factorial(initialSum);
+    long long bottomOfMultinomialCoefficient = 1;
+    for (int j = 0; j < variations.size(); j++) {
+        bottomOfMultinomialCoefficient *= factorial(variations[j]);
+    }
+    resultProbabilities[variationSum] += (topOfMultinomialCoefficient / bottomOfMultinomialCoefficient);
+    return;
+}
+void ArtificialDieResult::calculateResults(int a, int b) {
+    cout << "Cannot calculate artificialDieResults" << endl;
+}
+void ArtificialDieResult::calculateResults(DieResult a, int b) {
+    cout << "Cannot calculate artificialDieResults" << endl;
+}
+void ArtificialDieResult::calculateResults(int a, DieResult b) {
+    cout << "Cannot calculate artificialDieResults" << endl;
+}
+void ArtificialDieResult::calculateResults(DieResult a, DieResult b) {
+    cout << "Cannot calculate artificialDieResults" << endl;
+}
+Token::Token(Type type,
+    const string& s,
+    int precedence,
+    bool unary
+)
+    : type{ type }
+    , str(s)
+    , precedence{ precedence }
+    , unary{ unary }
+{}
 
-    Token(Type type,
-        const string& s,
-        int precedence = -1,
-        bool unary = false
-    )
-        : type{ type }
-        , str(s)
-        , precedence{ precedence }
-        , unary{ unary }
-    {}
-
-    const Type type;
-    const string str;
-    const int precedence;
-    const bool unary;
-};
 
 ostream& operator<<(ostream& os, const Token& token) {
     os << token.str;
@@ -182,11 +300,11 @@ deque<Token> tokenizeExpression(const string& expr) {
             char c = *pointer;
             switch (c) {
             default:    break;
-            case '(':   token = Token::Type::LeftParen;break;
-            case ')':   token = Token::Type::RightParen;break;
-            case '*':   token = Token::Type::Operator;precedence = 3; break;
-            case '+':   token = Token::Type::Operator;precedence = 2; break;
-            case 'd':   token = Token::Type::Operator;precedence = 7; break;
+            case '(':   token = Token::Type::LeftParen; break;
+            case ')':   token = Token::Type::RightParen; break;
+            case '*':   token = Token::Type::Operator; precedence = 3; break;
+            case '+':   token = Token::Type::Operator; precedence = 2; break;
+            case 'd':   token = Token::Type::Operator; precedence = 7; break;
             case '-':
                 if (tokens.empty()
                     || tokens.back().type == Token::Type::Operator
@@ -211,15 +329,15 @@ deque<Token> tokenizeExpression(const string& expr) {
     return tokens;
 }
 
-int GCD(long long a, long long b) {
+long long GCD(long long a, long long b) {
     if (b == 0)
         return a;
     return GCD(b, a % b);
 }
 
-int LCM(vector<long long>& input)
+long long LCM(vector<long long>& input)
 {
-    int result = input[0];
+    long long result = input[0];
     for (size_t i = 1; i < input.size(); i++) {
         result = (((input[i] * result)) / (GCD(input[i], result)));
     }
@@ -230,7 +348,7 @@ int LCM(vector<long long>& input)
 DieResult combineResult(DieResult&& a, DieResult&& b) {
     vector<long long> denominators = { a.denominator, b.denominator };
     if (a.denominator == 0 || b.denominator == 0) {
-        printf("The resulting die could have negative sides, and you cant roll a negative sided die. So... don't do that :) \n");
+        printf("The resulting die could have negative sides (If you're sure it can't, something has overflown into the negatives. Yay!), and you cant roll a negative sided die. So... don't do that :) \n");
         system("pause");
         exit(500);
     };
@@ -248,10 +366,11 @@ DieResult combineResult(DieResult&& a, DieResult&& b) {
     return a;
 };
 
-DieResult addResult(DieResult &a, DieResult &b) {
+DieResult addResult(DieResult& a, DieResult& b) {
     int newDenominator = a.denominator * b.denominator;
-    DieResult newResult = DieResult({}, newDenominator);
-    for (tuple<int,int> resultA : a.resultProbabilities) {
+    DieResult newResult = ArtificialDieResult();
+    newResult.denominator = newDenominator;
+    for (tuple<int, int> resultA : a.resultProbabilities) {
         for (tuple<int, int> resultB : b.resultProbabilities) {
             int keyA = get<0>(resultA);
             int keyB = get<0>(resultB);
@@ -265,7 +384,8 @@ DieResult addResult(DieResult &a, DieResult &b) {
 
 DieResult subtractResult(DieResult& a, DieResult& b) {
     int newDenominator = a.denominator * b.denominator;
-    DieResult newResult = DieResult({}, newDenominator);
+    DieResult newResult = ArtificialDieResult();
+    newResult.denominator = newDenominator;
     for (tuple<int, int> resultA : a.resultProbabilities) {
         for (tuple<int, int> resultB : b.resultProbabilities) {
             int keyA = get<0>(resultA);
@@ -280,7 +400,8 @@ DieResult subtractResult(DieResult& a, DieResult& b) {
 
 DieResult multiplyResult(DieResult& a, DieResult& b) {
     int newDenominator = a.denominator * b.denominator;
-    DieResult newResult = DieResult({}, newDenominator);
+    DieResult newResult = ArtificialDieResult();
+    newResult.denominator = newDenominator;
     for (tuple<int, int> resultA : a.resultProbabilities) {
         for (tuple<int, int> resultB : b.resultProbabilities) {
             int keyA = get<0>(resultA);
@@ -294,7 +415,8 @@ DieResult multiplyResult(DieResult& a, DieResult& b) {
 }
 
 DieResult intToDieResult(int input) {
-    DieResult newResult = DieResult({}, 1);
+    DieResult newResult = ArtificialDieResult();
+    newResult.denominator = 1;
     newResult.resultProbabilities[input] = 1;
     return newResult;
 }
@@ -319,7 +441,7 @@ deque<Token> shuntingYard(const deque<Token>& tokens) {
                     queue.push_back(o2);
                     continue;
                 }
-                
+
                 break;
             }
             operatorStack.push_back(o1);
@@ -340,11 +462,16 @@ deque<Token> shuntingYard(const deque<Token>& tokens) {
             if (!match && operatorStack.empty()) {
                 return {};
             }
-            operatorStack.pop_back();
+            if (!operatorStack.empty()) {
+                operatorStack.pop_back();
+            }
+            else {
+                return { Token{Token::Type::Err, "Invalid Input"} };
+            }
         }
         break;
         default:
-            return { Token{Token::Type::Err, "Invalid Input"}};
+            return { Token{Token::Type::Err, "Invalid Input"} };
         }
     }
 
@@ -420,27 +547,8 @@ DieResult calculate(const string& expr) {
                     stack.push_back(subtractResult(lhs, rhs));
                     break;
                 case 'd':
-                    vector<DieResult> tempResults;
-                    for (auto& resultLhs : lhs.resultProbabilities) {
-                        for (auto& resultRhs : rhs.resultProbabilities) {
-                            vector<int> sides;
-                            for (int i = 0; i < get<0>(resultLhs); i++) {
-                                sides.push_back(get<0>(resultRhs));
-                            }
-                            DieResult tempResult = DieResult(sides);
-                            tempResult.multiplyProbabilities(get<1>(resultLhs));
-                            tempResult.denominator *= lhs.denominator * rhs.denominator;
-                            tempResults.push_back(tempResult);
-                            if (tempResult.resultProbabilities.size() == 0) {
-                                queue.push_back(Token{ Token::Type::Err, "Cannot have 0 or negative sided die" });
-                            }
-                        }
-                    }
-                    DieResult finalResult = tempResults[0];
-                    for (size_t i = 1; i < tempResults.size(); i++) {
-                        finalResult = combineResult(move(finalResult), move(tempResults[i]));
-                    }
-                    stack.push_back(finalResult);
+                    DieResult dieResult = DieResult::Create(lhs, rhs);
+                    stack.push_back(dieResult);
                     break;
                 }
             }
@@ -449,14 +557,20 @@ DieResult calculate(const string& expr) {
 
         default:
             cout << (token.str) << endl;
-            return DieResult({ 0 });
+            return SimpleDieResult::Create(1, 1);
         }
     }
-
-    return stack.back();
+    if (stack.size() > 0) {
+        return stack.back();
+    }
+    cout << "Invalid input" << endl;
+    return SimpleDieResult::Create(1, 1);
 }
 
+
 int main() {
+    //DieResult testDie = DieResult::Create(SimpleDieResult::Create(2, 1), SimpleDieResult::Create(1, 2));
+    //testDie.logResult();
     cout << "Input a die equation to find outcome probabilities!" << endl;
     cout << "Input help for valid commands" << endl;
     string input;
@@ -472,4 +586,4 @@ int main() {
         DieResult testResult = calculate(input);
         testResult.logResult();
     }
-} 
+}
