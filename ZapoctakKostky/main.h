@@ -13,6 +13,9 @@ using namespace std;
 class DieResult {
 public:
 
+    DieResult() : denominator(0), artificialDieResult(false), maxRoll(0), simpleDieResult(false) {
+    };
+
     static DieResult Create(int dieCount, DieResult sideSize);
 
     static DieResult Create(DieResult dieCount, int sideSize);
@@ -42,7 +45,7 @@ public:
 
     virtual void processVariation(int initialSum, vector<int>& variations);
 
-    void calc(int targetSum, int i, vector<int>& variations, int initialSum);
+    void calc(int targetSum, size_t i, vector<int>& variations, int initialSum);
 
 };
 class SimpleDieResult : public DieResult {

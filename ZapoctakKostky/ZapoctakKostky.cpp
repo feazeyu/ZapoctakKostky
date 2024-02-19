@@ -69,7 +69,7 @@ DieResult DieResult::Create(DieResult dieCount, DieResult sideSize) {
 DieResult DieResult::calculateResults(int dieCount, DieResult sideSize) {
     if (artificialDieResult) {
         cout << "Cannot calculate results for an artificialDieResult" << endl;
-        exit;
+        exit(0);
     }
     vector<int> variations = {};
     DieResult dieResult;
@@ -83,16 +83,17 @@ DieResult DieResult::calculateResults(int dieCount, DieResult sideSize) {
             haveFirst = true;
         }
         else {
-            dieResult = combineResult(std::move(dieResult), move(newDieResult));
+            dieResult = combineResult(move(dieResult), move(newDieResult));
         }
     }
+
     return dieResult;
 }
 
 DieResult DieResult::calculateResults(DieResult dieCount, int sideSize) {
     if (artificialDieResult) {
         cout << "Cannot calculate results for an artificialDieResult" << endl;
-        exit;
+        exit(0);
     }
     vector<int> variations = {};
     DieResult dieResult;
@@ -115,7 +116,7 @@ DieResult DieResult::calculateResults(DieResult dieCount, int sideSize) {
 DieResult DieResult::calculateResults(DieResult dieCount, DieResult sideSize) {
     if (artificialDieResult) {
         cout << "Cannot calculate results for an artificialDieResult" << endl;
-        exit;
+        exit(0);
     }
     vector<int> variations = {};
     DieResult dieResult;
@@ -169,12 +170,12 @@ void DieResult::logResult() {
 
 void DieResult::processVariation(int initialSum, vector<int>& variations) {
     int variationSum = 0; //TODO
-    for (int k = 0; k < variations.size(); k++) {
+    for (size_t k = 0; k < variations.size(); k++) {
         variationSum += variations[k] * k;
     }
     long long topOfMultinomialCoefficient = factorial(initialSum);
     long long bottomOfMultinomialCoefficient = 1;
-    for (int j = 0; j < variations.size(); j++) {
+    for (size_t j = 0; j < variations.size(); j++) {
         bottomOfMultinomialCoefficient *= factorial(variations[j]);
     }
     resultProbabilities[variationSum] += (topOfMultinomialCoefficient / bottomOfMultinomialCoefficient);
@@ -183,7 +184,7 @@ void DieResult::processVariation(int initialSum, vector<int>& variations) {
 /*
 Recursive calculation of all possibilities
 */
-void DieResult::calc(int targetSum, int i, vector<int>& variations, int initialSum) {
+void DieResult::calc(int targetSum, size_t i, vector<int>& variations, int initialSum) {
     if (i == variations.size() - 1 || targetSum == 0) {
         variations[i] = targetSum;
         //Mam valid variaci
@@ -223,7 +224,7 @@ SimpleDieResult SimpleDieResult::Create(int dieCount, int sideSize)
 void SimpleDieResult::calculateResults(int dieCount, int sideSize) {
     if (artificialDieResult) {
         cout << "Cannot calculate results for an artificialDieResult" << endl;
-        exit;
+        exit(0);
     }
     vector<int> variations = {};
     for (int j = 0; j < sideSize; j++) {
@@ -236,12 +237,12 @@ void SimpleDieResult::calculateResults(int dieCount, int sideSize) {
 
 void SimpleDieResult::processVariation(int initialSum, vector<int>& variations) {
     int variationSum = dieCount;
-    for (int k = 0; k < variations.size(); k++) {
+    for (size_t k = 0; k < variations.size(); k++) {
         variationSum += variations[k] * k;
     }
     long long topOfMultinomialCoefficient = factorial(initialSum);
     long long bottomOfMultinomialCoefficient = 1;
-    for (int j = 0; j < variations.size(); j++) {
+    for (size_t j = 0; j < variations.size(); j++) {
         bottomOfMultinomialCoefficient *= factorial(variations[j]);
     }
     resultProbabilities[variationSum] += (topOfMultinomialCoefficient / bottomOfMultinomialCoefficient);
@@ -569,8 +570,8 @@ DieResult calculate(const string& expr) {
 
 
 int main() {
-    //DieResult testDie = DieResult::Create(SimpleDieResult::Create(2, 1), SimpleDieResult::Create(1, 2));
-    //testDie.logResult();
+    DieResult testDie = DieResult::Create(1, SimpleDieResult::Create(1, 2));
+    testDie.logResult();
     cout << "Input a die equation to find outcome probabilities!" << endl;
     cout << "Input help for valid commands" << endl;
     string input;
